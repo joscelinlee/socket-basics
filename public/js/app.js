@@ -4,9 +4,15 @@ var socket = io(); // io() is defined by the socket.io script above
 
 console.log(name + ' wants to join ' + room);
 
+jQuery('.room-title').text(room);
+
 // listen to the connect event
 socket.on('connect', function() {
 	console.log('Connected to socket.io server!');
+	socket.emit('joinRoom', { // emit a custom event to the server saying they want to join a specific room
+		name: name,
+		room: room
+	});
 });
 
 // front-end to listen to the message event
