@@ -10,6 +10,38 @@ app.use(express.static(__dirname + '/public'));
 
 var clientInfo = {}; // set of key-value pairs, where key is unique socket id (socket.io generates), value is the user info
 
+/*var clientInfo = {
+	'123abd': {
+		name: 'Andrew',
+		room: 'LOTR Fans'
+	}
+}*/
+
+// Sends current users to provided socket
+function sendCurrentUsers(socket) {
+	// use socketid on the socket to know the room the user is in
+	var info = clientInfo[socket.id];
+	var users = []; // push string elements in to array
+
+	if (typeof info === 'undefined') { // for room that doesn't exist
+		return;
+	}
+
+	Object.keys(clientInfo).forEach(function(socketId) { // key is socketid
+		var userInfo = clientInfo[socketId];
+
+		if (info.room === userInfo.room) {
+			users.push(userInfo.name);
+		}
+	}); // take an object and return an array of all the attributes on the object
+
+	socket.emit('message', {
+		name: 'System', 
+		text: 'Current users: ' + users.join(', '),
+		timestamp: moment().valueOf()
+	});
+}
+
 io.on('connection', function(socket) { // individual connection/socket
 	console.log('User connected via socket.io!');
 
@@ -40,9 +72,13 @@ io.on('connection', function(socket) { // individual connection/socket
 	socket.on('message', function(message) {
 		console.log('Message received: ' + message.text);
 
-		message.timestamp = moment().valueOf();
-		io.to(clientInfo[socket.id].room).emit('message', message); // send to everybody including the person who sent it
-		//socket.broadcast.emit('message', message); // send to everybody except the person who sent it. First atgument is the type and second argument contains the reference message parameter.
+		if (message.text === '@currentUsers') {
+			sendCurrentUsers(socket);
+		} else {
+			message.timestamp = moment().valueOf();
+			io.to(clientInfo[socket.id].room).emit('message', message); // send to everybody including the person who sent it
+			//socket.broadcast.emit('message', message); // send to everybody except the person who sent it. First atgument is the type and second argument contains the reference message parameter.
+		}
 	});
 
 	socket.emit('message', {
