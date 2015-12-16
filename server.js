@@ -13,6 +13,19 @@ var clientInfo = {}; // set of key-value pairs, where key is unique socket id (s
 io.on('connection', function(socket) { // individual connection/socket
 	console.log('User connected via socket.io!');
 
+	socket.on('disconnect', function() {
+		var userData = clientInfo[socket.id];
+		if (typeof  userData !== 'undefined') { // 'socket.id' is a dynamic attribute. If there is client info for this socket, this code will run.
+			socket.leave(userData.room);
+			io.to(userData.room).emit('message', {
+				name: 'System',
+				text: userData.name + ' has left!',
+				timestamp: moment().valueOf()
+			});
+			delete clientInfo[socket.id]; // delete an attribute from an object
+		}
+	}); // 'disconect' is a fixed name unlike the other event names
+
 	socket.on('joinRoom', function(req) {
 		// clientInfo.name = 'test'; // not dynamic, hence we don't use this line of code
 		clientInfo[socket.id] = req; // set it to equal the req object
